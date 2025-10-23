@@ -1,7 +1,9 @@
+# @title UBP Config
+
 """
 Universal Binary Principle (UBP) Framework v3.2+ - UBP Config
 Author: Euan Craig, New Zealand
-Date: 03 September 2025
+Date: 23 October 2025
 ================================================
 
 """
@@ -11,9 +13,21 @@ from dataclasses import dataclass, field
 import json
 
 # Import system constants to populate ConstantConfig
-from system_constants import UBPConstants as RawUBPConstants
+# The necessary classes (UBPConstants, HardwareProfileManager, HardwareProfile)
+# are expected to be defined in previous cells that have been executed.
+# from system_constants import UBPConstants as RawUBPConstants
 # Import HardwareProfileManager for auto-detection
-from hardware_profiles import HardwareProfileManager, HardwareProfile # Import HardwareProfile for type hinting
+# from hardware_profiles import HardwareProfileManager, HardwareProfile # Import HardwareProfile for type hinting
+
+# Import definitions from other cells (These lines are causing the ModuleNotFoundError
+# when run as notebook cells, as they expect external .py files)
+# from QC3Qwwsyau5w import UBPConstants as RawUBPConstants # Removed
+# from SvzGQg_fbcBI import HardwareProfileManager, HardwareProfile # Removed
+
+# Assume UBPConstants, HardwareProfileManager, HardwareProfile are available from previously executed cells.
+# Alias UBPConstants as RawUBPConstants for consistency with the rest of the code.
+RawUBPConstants = UBPConstants
+
 
 # --- Dataclasses for Configuration Structure ---
 
@@ -173,13 +187,13 @@ class UBPConfig:
     Initializes all sub-configurations and realm definitions.
     """
     environment: str = "development" # "development", "production", "testing", "auto"
-    
+
     # Global constants
     constants: ConstantConfig = field(default_factory=ConstantConfig)
-    
+
     # Performance parameters
     performance: PerformanceConfig = field(default_factory=PerformanceConfig)
-    
+
     # Temporal parameters
     temporal: TemporalConfig = field(default_factory=TemporalConfig)
 
@@ -188,10 +202,10 @@ class UBPConfig:
 
     # Energy parameters
     energy: EnergyConfig = field(default_factory=EnergyConfig) # Added EnergyConfig
-    
+
     # Bitfield Dimensions (6D tuple as specified by UBP design)
     BITFIELD_DIMENSIONS: Tuple[int, int, int, int, int, int] = (10, 10, 10, 10, 10, 10)
-    
+
     # Realm configurations - a dictionary for easy access
     realms: Dict[str, RealmConfig] = field(default_factory=dict)
 
@@ -202,7 +216,7 @@ class UBPConfig:
     crv: CRVConfig = field(default_factory=CRVConfig)
     error_correction: ErrorCorrectionConfig = field(default_factory=ErrorCorrectionConfig)
     bitfield: BitfieldConfig = field(default_factory=BitfieldConfig)
-    
+
     default_realm: str = "electromagnetic"
 
 
@@ -213,7 +227,7 @@ class UBPConfig:
 
     def _initialize_default_realms(self):
         """Initializes the predefined computational realms."""
-        
+
         # Helper for wavelength calculation, using SPEED_OF_LIGHT from constants
         def calculate_wavelength(freq_hz):
             if freq_hz > 0:
@@ -345,6 +359,7 @@ class UBPConfig:
         """
         if self.environment == "auto":
             print("UBPConfig: Auto-detecting hardware profile...")
+            # Assuming HardwareProfileManager is available from a previous cell execution
             hw_manager = HardwareProfileManager()
             detected_profile_name = hw_manager.auto_detect_profile()
             detected_profile = hw_manager.get_profile(detected_profile_name)
@@ -370,15 +385,17 @@ class UBPConfig:
 
     def _apply_hardware_profile_settings(self, profile: HardwareProfile):
         """Applies settings from a detected HardwareProfile to the UBPConfig."""
+        # Assuming RawUBPConstants is available from a previous cell execution
         self.performance.TARGET_NRCI = RawUBPConstants.NRCI_TARGET_STANDARD if profile.error_correction_level == "basic" else RawUBPConstants.NRCI_TARGET_HIGH_COHERENCE
-        
+
         # Coherence threshold from profile, default to a sensible value if not directly available
         self.performance.COHERENCE_THRESHOLD = getattr(profile, 'coherence_threshold', RawUBPConstants.COHERENCE_THRESHOLD)
-        
+
         self.BITFIELD_DIMENSIONS = profile.bitfield_dimensions
-        self.temporal.COHERENT_SYNCHRONIZATION_CYCLE_PERIOD = RawUBPConstants.COHERENCE_SYNCHRONIZATION_CYCLE_SECONDS
+        # Corrected typo here
+        self.temporal.COHERENT_SYNCHRONIZATION_CYCLE_PERIOD = RawUBPConstants.COHERENT_SYNCHRONIZATION_CYCLE_SECONDS
         self.observer.DEFAULT_INTENT_LEVEL = 1.0
-        
+
         # Ensure 'enable_error_correction' is consistently handled as a boolean
         if isinstance(profile.enable_error_correction, bool):
             self.error_correction.nrci_base_score = 0.9 if profile.enable_error_correction else 0.7
@@ -393,11 +410,11 @@ class UBPConfig:
     def get_realm_config(self, realm_name: str) -> Optional[RealmConfig]:
         """Returns the configuration for a specific realm."""
         return self.realms.get(realm_name.lower())
-    
+
     def get_molecule_config(self, molecule_name: str) -> Optional[MoleculeConfig]:
         """Returns the configuration for a specific molecule."""
         return self.molecules.get(molecule_name.lower())
-    
+
     def get_summary(self) -> Dict[str, Any]:
         """Returns a summary of the current configuration."""
         return {
@@ -509,5 +526,5 @@ if __name__ == "__main__":
     print(f"Config Environment: {config_auto.environment}")
     print(f"Bitfield Dimensions: {config_auto.get_bitfield_dimensions()}")
     print(f"Target NRCI: {config_auto.performance.TARGET_NRCI}")
-    
+
     print("\n✅ ubp_config.py test completed successfully!")
